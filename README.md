@@ -4,7 +4,6 @@
 - 💞️ I’m looking to collaborate on = small projects
 - 📫 How to reach me = @zakrul.al
 - 😄 Pronouns: He/His
-- ⚡ Fun fact: Lazy
 
 <!---
 Zaqrul/Zaqrul is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
