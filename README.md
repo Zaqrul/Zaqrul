@@ -2,7 +2,7 @@
 - 👀 I’m interested in Programming
 - 🌱 I’m currently learning Python and several frameworks
 - 💞️ I’m looking to collaborate on = small projects
-- 📫 How to reach me = @zakrul.al
+- 📫 How to reach me = @zakrulabd
 - 😄 Pronouns: He/His
 
 <!---
