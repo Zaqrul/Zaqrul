@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Customer Loyalty System</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Customer Loyalty System</h1>
+            <div class="user-info">
+                <span id="user-name"></span>
+                <span id="user-role" class="badge"></span>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="dashboard-nav">
+            <button class="nav-btn active" onclick="showTab('customers')">Customers</button>
+            <button class="nav-btn" onclick="showTab('punchcards')">Punchcards</button>
+            <button class="nav-btn" onclick="showTab('redemptions')">Redemptions</button>
+            <button class="nav-btn" onclick="showTab('shopify')">Shopify Sync</button>
+            <button class="nav-btn" id="staff-tab" onclick="showTab('staff')" style="display: none;">Staff Management</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Customers Tab -->
+            <div id="customers-tab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Customer Management</h2>
+                    <button onclick="showAddCustomerModal()" class="btn btn-primary">Add Customer</button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="customer-search" placeholder="Search customers..." oninput="searchCustomers()">
+                </div>
+
+                <div class="table-container">
+                    <table id="customers-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Active Punchcards</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Punchcards Tab -->
+            <div id="punchcards-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Punchcard Management</h2>
+                    <button onclick="loadPunchcards()" class="btn btn-secondary">Refresh</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="punchcards-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Punches</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="punchcards-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Redemptions Tab -->
+            <div id="redemptions-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Redemption History</h2>
+                    <button onclick="loadRedemptions()" class="btn btn-secondary">Refresh</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="redemptions-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Redeemed By</th>
+                                <th>Date</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="redemptions-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Shopify Sync Tab -->
+            <div id="shopify-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Shopify Integration</h2>
+                </div>
+
+                <div class="shopify-actions">
+                    <button onclick="syncAllCustomers()" class="btn btn-primary">Sync All Customers</button>
+                    <div class="sync-result" id="sync-result"></div>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="shopify-search" placeholder="Search Shopify customers...">
+                    <button onclick="searchShopify()" class="btn btn-secondary">Search</button>
+                </div>
+
+                <div id="shopify-results"></div>
+            </div>
+
+            <!-- Staff Management Tab (Manager Only) -->
+            <div id="staff-tab-content" class="tab-content">
+                <div class="tab-header">
+                    <h2>Staff Management</h2>
+                    <button onclick="showAddStaffModal()" class="btn btn-primary">Add Staff</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="staff-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay" onclick="closeModal()"></div>
+
+    <!-- Add Customer Modal -->
+    <div id="add-customer-modal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Customer</h3>
+            <form id="add-customer-form">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Add Customer</button>
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer Details Modal -->
+    <div id="customer-details-modal" class="modal">
+        <div class="modal-content">
+            <h3>Customer Details</h3>
+            <div id="customer-details"></div>
+            <div class="modal-buttons">
+                <button onclick="closeModal()" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redeem Punchcard Modal -->
+    <div id="redeem-modal" class="modal">
+        <div class="modal-content">
+            <h3>Redeem Punchcard</h3>
+            <form id="redeem-form">
+                <input type="hidden" id="redeem-punchcard-id">
+                <p id="redeem-customer-name"></p>
+                <div class="form-group">
+                    <label>Notes (optional)</label>
+                    <textarea name="notes" rows="3"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Confirm Redemption</button>
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Staff Modal -->
+    <div id="add-staff-modal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Staff Member</h3>
+            <form id="add-staff-form">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Role *</label>
+                    <select name="role" required>
+                        <option value="staff">Staff</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Add Staff</button>
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
