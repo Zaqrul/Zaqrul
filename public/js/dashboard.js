@@ -29,8 +29,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     loadCustomers();
 });
 
+// Check if we're in dev mode (mock data)
+function isDevMode() {
+    return token && token.startsWith('dev-mode-token');
+}
+
 // API Helper function
 async function apiCall(endpoint, options = {}) {
+    // If in dev mode, return mock data
+    if (isDevMode()) {
+        return mockApiCall(endpoint, options);
+    }
+
     const defaultOptions = {
         headers: {
             'Content-Type': 'application/json',
@@ -46,6 +56,168 @@ async function apiCall(endpoint, options = {}) {
     }
 
     return response;
+}
+
+// Mock API responses for dev mode
+async function mockApiCall(endpoint, options = {}) {
+    console.log('DEV MODE: Mock API call to', endpoint, options);
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Mock data storage
+    if (!window.mockData) {
+        window.mockData = {
+            customers: [
+                { id: 1, name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', active_punchcards: 1, total_punchcards: 2, redeemed_punchcards: 1 },
+                { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '098-765-4321', active_punchcards: 2, total_punchcards: 3, redeemed_punchcards: 1 },
+                { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '555-123-4567', active_punchcards: 1, total_punchcards: 1, redeemed_punchcards: 0 }
+            ],
+            punchcards: [
+                { id: 1, customer_id: 1, customer_name: 'John Doe', customer_email: 'john@example.com', punches: 7, max_punches: 10, is_redeemed: 0, created_at: new Date().toISOString() },
+                { id: 2, customer_id: 2, customer_name: 'Jane Smith', customer_email: 'jane@example.com', punches: 10, max_punches: 10, is_redeemed: 0, created_at: new Date().toISOString() },
+                { id: 3, customer_id: 2, customer_name: 'Jane Smith', customer_email: 'jane@example.com', punches: 5, max_punches: 10, is_redeemed: 0, created_at: new Date().toISOString() },
+                { id: 4, customer_id: 3, customer_name: 'Bob Johnson', customer_email: 'bob@example.com', punches: 3, max_punches: 10, is_redeemed: 0, created_at: new Date().toISOString() }
+            ],
+            redemptions: [
+                { id: 1, customer_id: 1, customer_name: 'John Doe', customer_email: 'john@example.com', punchcard_id: 999, redeemed_by: 1, redeemed_by_name: 'Developer', notes: 'Free coffee', created_at: new Date(Date.now() - 86400000).toISOString() }
+            ],
+            staff: [
+                { id: 1, name: 'Developer', email: 'dev@example.com', role: 'manager', created_at: new Date().toISOString() },
+                { id: 2, name: 'Staff User', email: 'staff@example.com', role: 'staff', created_at: new Date().toISOString() }
+            ]
+        };
+    }
+
+    // Parse endpoint
+    const method = options.method || 'GET';
+
+    // Mock responses based on endpoint
+    if (endpoint === '/api/customers') {
+        if (method === 'POST') {
+            const body = JSON.parse(options.body);
+            const newCustomer = {
+                id: window.mockData.customers.length + 1,
+                ...body,
+                active_punchcards: 1,
+                total_punchcards: 1,
+                redeemed_punchcards: 0
+            };
+            window.mockData.customers.push(newCustomer);
+
+            // Create initial punchcard
+            window.mockData.punchcards.push({
+                id: window.mockData.punchcards.length + 1,
+                customer_id: newCustomer.id,
+                customer_name: newCustomer.name,
+                customer_email: newCustomer.email,
+                punches: 0,
+                max_punches: 10,
+                is_redeemed: 0,
+                created_at: new Date().toISOString()
+            });
+
+            return { ok: true, json: async () => ({ message: 'Customer added successfully', customerId: newCustomer.id }) };
+        }
+        return { ok: true, json: async () => window.mockData.customers };
+    }
+
+    if (endpoint.startsWith('/api/customers/')) {
+        const id = parseInt(endpoint.split('/')[3]);
+        const customer = window.mockData.customers.find(c => c.id === id);
+        if (customer) {
+            const punchcards = window.mockData.punchcards.filter(p => p.customer_id === id);
+            return { ok: true, json: async () => ({ ...customer, punchcards }) };
+        }
+    }
+
+    if (endpoint === '/api/punchcards') {
+        return { ok: true, json: async () => window.mockData.punchcards };
+    }
+
+    if (endpoint.startsWith('/api/punchcards/punch/')) {
+        const customerId = parseInt(endpoint.split('/')[4]);
+        const punchcard = window.mockData.punchcards.find(p => p.customer_id === customerId && p.is_redeemed === 0);
+        if (punchcard && punchcard.punches < punchcard.max_punches) {
+            punchcard.punches++;
+            return {
+                ok: true,
+                json: async () => ({
+                    message: 'Punch added successfully',
+                    punches: punchcard.punches,
+                    remaining: punchcard.max_punches - punchcard.punches,
+                    isFull: punchcard.punches >= punchcard.max_punches
+                })
+            };
+        }
+    }
+
+    if (endpoint.startsWith('/api/punchcards/redeem/')) {
+        const punchcardId = parseInt(endpoint.split('/')[4]);
+        const punchcard = window.mockData.punchcards.find(p => p.id === punchcardId);
+        if (punchcard) {
+            punchcard.is_redeemed = 1;
+            punchcard.redeemed_at = new Date().toISOString();
+
+            // Add to redemptions
+            const body = options.body ? JSON.parse(options.body) : {};
+            window.mockData.redemptions.push({
+                id: window.mockData.redemptions.length + 1,
+                customer_id: punchcard.customer_id,
+                customer_name: punchcard.customer_name,
+                punchcard_id: punchcard.id,
+                redeemed_by: 1,
+                redeemed_by_name: 'Developer',
+                notes: body.notes || null,
+                created_at: new Date().toISOString()
+            });
+
+            // Create new punchcard
+            window.mockData.punchcards.push({
+                id: window.mockData.punchcards.length + 1,
+                customer_id: punchcard.customer_id,
+                customer_name: punchcard.customer_name,
+                customer_email: punchcard.customer_email,
+                punches: 0,
+                max_punches: 10,
+                is_redeemed: 0,
+                created_at: new Date().toISOString()
+            });
+
+            return { ok: true, json: async () => ({ message: 'Punchcard redeemed successfully. New punchcard created.' }) };
+        }
+    }
+
+    if (endpoint === '/api/punchcards/redemptions') {
+        return { ok: true, json: async () => window.mockData.redemptions };
+    }
+
+    if (endpoint === '/api/staff') {
+        if (method === 'POST') {
+            const body = JSON.parse(options.body);
+            const newStaff = {
+                id: window.mockData.staff.length + 1,
+                name: body.name,
+                email: body.email,
+                role: body.role,
+                created_at: new Date().toISOString()
+            };
+            window.mockData.staff.push(newStaff);
+            return { ok: true, json: async () => ({ message: 'Staff member added successfully', staffId: newStaff.id }) };
+        }
+        return { ok: true, json: async () => window.mockData.staff };
+    }
+
+    if (endpoint.startsWith('/api/shopify/')) {
+        return {
+            ok: false,
+            status: 500,
+            json: async () => ({ error: 'Shopify not configured in dev mode' })
+        };
+    }
+
+    // Default response
+    return { ok: true, json: async () => ({ message: 'Mock response' }) };
 }
 
 // Tab Navigation
